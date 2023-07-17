@@ -1,0 +1,139 @@
+*&---------------------------------------------------------------------*
+*& Report ZDEMO_ALFY_BILLING_SELECT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zdemo_alfy_billing_select.
+
+TYPES : BEGIN OF ty_zbilling,
+          vbeln TYPE zbilling-vbeln,
+          fkdat TYPE zbilling-fkdat,
+          kunrg TYPE zbilling-kunrg,
+          netwr TYPE zbilling-netwr,
+        END OF ty_zbilling.
+
+
+TYPES : BEGIN OF ty_zitem,
+          vbeln TYPE zitem-vbeln,
+          posnr TYPE zitem-posnr,
+          matnr TYPE zitem-matnr,
+          fklmg TYPE zitem-fklmg,
+          vrkme TYPE zitem-vrkme,
+          netwr TYPE zitem-netwr,
+        END OF ty_zitem.
+
+TYPES : BEGIN OF ty_t006a,
+          msehi TYPE t006a-msehi,
+          mseht TYPE t006a-mseht,
+        END OF ty_t006a.
+TYPES : BEGIN OF ty_kna1,
+          kunnr TYPE kna1-kunnr,
+          name1 TYPE kna1-name1,
+        END OF ty_kna1.
+
+
+DATA : it_zbilling TYPE TABLE OF ty_zbilling,
+       wa_zbilling LIKE LINE OF it_zbilling,
+       it_zitem    TYPE TABLE OF ty_zitem,
+       wa_zitem    LIKE LINE OF it_zitem,
+       v_name1     TYPE kna1-name1,
+       it_t006a    TYPE TABLE OF ty_t006a,
+       wa_t006a    LIKE LINE OF it_t006a,
+       p_vbeln     TYPE zbilling-vbeln,
+       v_name      TYPE kna1-name1,
+       it_kna1     TYPE TABLE OF ty_kna1,
+       wa_kna1     LIKE LINE OF it_kna1.
+SELECT-OPTIONS s_vbeln FOR p_vbeln.
+SELECT vbeln fkdat kunrg netwr FROM zbilling INTO TABLE it_zbilling WHERE vbeln IN s_vbeln[].
+
+*LOOP AT it_zbilling INTO wa_zbilling.
+*  READ TABLE it_zbilling INTO wa_zbilling WITH KEY vbeln = wa_zbilling-vbeln.
+*  SELECT SINGLE name1 FROM kna1 INTO v_name1 WHERE kunnr EQ wa_zbilling-kunrg.
+*  WRITE : / 'Doc No :', wa_zbilling-vbeln,
+*          / 'Date :', wa_zbilling-fkdat,
+*          / 'Payer :', v_name1,
+*          / 'NetValue :',wa_zbilling-netwr LEFT-JUSTIFIED.
+*
+*  WRITE : / 'Item',
+*  20 'Material',
+*  40 'Qty',
+*  60 'UoM',
+*  80 'Netvalue'.
+*
+*  SELECT * FROM zitem  INTO TABLE it_zitem WHERE vbeln EQ wa_zbilling-vbeln.
+*  SELECT msehi mseht FROM t006a INTO TABLE it_t006a FOR ALL ENTRIES IN it_zitem WHERE spras EQ sy-langu AND msehi EQ it_zitem-vrkme.
+*  LOOP AT it_zitem INTO wa_zitem.
+*    READ TABLE it_t006a INTO wa_t006a WITH KEY msehi = wa_zitem-vrkme.
+*    WRITE : / wa_zitem-posnr ,
+*    20 wa_zitem-matnr,
+*    30 wa_zitem-fklmg,
+*    60 wa_t006a-mseht,
+*    80 wa_zitem-netwr LEFT-JUSTIFIED.
+*  ENDLOOP.
+*ENDLOOP.
+
+
+
+
+
+SELECT vbeln fkdat kunrg netwr FROM zbilling INTO TABLE it_zbilling WHERE vbeln IN s_vbeln[].
+
+SELECT vbeln posnr matnr fklmg vrkme netwr FROM zitem INTO TABLE  it_zitem FOR ALL ENTRIES IN it_zbilling WHERE vbeln EQ it_zbilling-vbeln.
+SELECT name1 kunnr FROM kna1 INTO TABLE  it_kna1  FOR ALL ENTRIES IN it_zbilling WHERE kunnr EQ it_zbilling-kunrg.
+SELECT msehi mseht FROM t006a INTO  TABLE it_t006a  FOR ALL ENTRIES IN it_zitem WHERE spras EQ sy-langu AND msehi EQ it_zitem-vrkme.
+SELECT kunnr name1 FROM kna1 INTO TABLE it_kna1.
+
+DATA v_vbeln_temp LIKE wa_zitem-vbeln.
+DATA v_fklmg_total LIKE wa_zitem-fklmg.
+SORT it_zitem BY vbeln.
+LOOP AT it_zitem INTO wa_zitem.
+
+  READ TABLE it_zbilling INTO wa_zbilling WITH KEY vbeln = wa_zitem-vbeln.
+  READ TABLE it_kna1 INTO wa_kna1 WITH KEY kunnr = wa_zbilling-kunrg.
+  READ TABLE it_t006a INTO wa_t006a WITH KEY msehi = wa_zitem-vrkme.
+
+
+  AT NEW vbeln.
+
+    CLEAR v_fklmg_total.
+    WRITE : /'DOC_NO :',wa_zbilling-vbeln,
+           /'payer :',wa_zbilling-kunrg,
+           /'payer name :',wa_kna1-name1,
+           /'Date :',wa_zbilling-fkdat,
+           /'net value',wa_zbilling-netwr LEFT-JUSTIFIED.
+
+    WRITE : / 'Item',
+          20 'material',
+          30 'quantity',
+          40 'UOM',
+          50 'Abbrevation',
+          80 'Net value'.
+
+
+  ENDAT.
+
+  WRITE : / wa_zitem-vbeln,
+        20 wa_zitem-matnr,
+        30 wa_zitem-fklmg LEFT-JUSTIFIED,
+        40 wa_zitem-vrkme,
+        50 wa_t006a-mseht LEFT-JUSTIFIED,
+        80 wa_zitem-netwr LEFT-JUSTIFIED.
+
+
+
+  v_fklmg_total += wa_zitem-fklmg.
+
+
+
+  AT end of vbeln.
+    WRITE :  / 'total : ',20 v_fklmg_total.
+    sum.
+    write : 65 wa_zitem-netwr.
+  ENDAT.
+
+
+
+  v_vbeln_temp = wa_zitem-vbeln.
+
+
+ENDLOOP.
