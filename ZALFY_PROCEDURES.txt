@@ -1,0 +1,30 @@
+*&---------------------------------------------------------------------*
+*& Report ZALFY_PROCEDURES
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zalfy_procedures.
+DATA : v_matnr TYPE matnr,
+       v_spras TYPE spras,
+       v_maktx TYPE maktx.
+
+v_matnr = '000000000000000011'.
+v_spras = 'E'.
+
+PERFORM get_data USING v_matnr v_spras CHANGING v_maktx.
+write 'end'.
+*&---------------------------------------------------------------------*
+*& Form get_data
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> V_MATNR
+*&      --> V_SPRAS
+*&      <-- V_MAKTX
+*&---------------------------------------------------------------------*
+FORM get_data  USING    p_v_matnr
+                   value(p_v_spras)
+               CHANGING value(p_v_maktx).
+  select maktx from makt into p_v_maktx where matnr = p_v_matnr and spras = p_v_spras.
+endselect.
+ENDFORM.

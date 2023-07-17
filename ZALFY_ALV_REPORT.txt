@@ -1,0 +1,31 @@
+*&---------------------------------------------------------------------*
+*& Report ZALFY_ALV_REPORT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZALFY_ALV_REPORT.
+*class lcl_report definition.
+*
+*  public SECTION.
+
+  data t_vbak type STANDARD TABLE OF vbak.
+
+  data o_alv type REF TO cl_salv_table.
+
+*  ENDCLASS.
+
+  START-OF-SELECTION.
+*  data lo_report type REF TO lcl_report.
+*  create object lo_report.
+
+  select * from vbak into table t_vbak.
+
+    cl_salv_table=>factory(
+
+      IMPORTING
+        r_salv_table   =  o_alv                         " Basis Class Simple ALV Tables
+      CHANGING
+        t_table        =  t_vbak
+    ).
+
+      o_alv->display( ).

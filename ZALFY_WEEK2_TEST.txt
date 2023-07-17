@@ -1,0 +1,29 @@
+*&---------------------------------------------------------------------*
+*& Report ZALFY_WEEK2_TEST
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zalfy_week2_test.
+DATA v_kunnr TYPE kunnr.
+DATA itm_kna1 TYPE zalfy_t_kna1.
+DATA wa_kna1 LIKE LINE OF itm_kna1.
+SELECT-OPTIONS s_kunnr FOR v_kunnr.
+PERFORM get_details.
+PERFORM display.
+
+START-OF-SELECTION.
+FORM get_details.
+  CALL FUNCTION 'ZALFY_TEST_FM'
+    EXPORTING
+      s_kunnr = s_kunnr[]
+    IMPORTING
+      it_kna1 = itm_kna1.
+  .
+ENDFORM.
+
+FORM display.
+  CALL FUNCTION 'ZALFY_TEST_FMO'
+    EXPORTING
+      it_kna1 = itm_kna1.
+  .
+ENDFORM.

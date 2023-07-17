@@ -1,0 +1,29 @@
+*&---------------------------------------------------------------------*
+*& Report ZALFY_DOC
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zalfy_doc.
+DATA v_doc TYPE i.
+
+CALL FUNCTION 'ZALFY_DOC_FM'
+  IMPORTING
+    next_number = v_doc.
+.
+CALL FUNCTION 'ZALFY_DOC_FM'
+  IMPORTING
+    next_number = v_doc.
+
+
+CALL FUNCTION 'ZALFY_DOC_FM'
+  IMPORTING
+    next_number = v_doc.
+
+CALL FUNCTION 'ZALFY_DOC_FM'
+  IMPORTING
+    next_number = v_doc.
+
+CALL FUNCTION 'ZALFY_DOC_FM'
+  IMPORTING
+    next_number = v_doc.
+WRITE v_doc  .

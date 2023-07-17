@@ -1,0 +1,91 @@
+*&---------------------------------------------------------------------*
+*& Report ZALFY_DOC_CLASS
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zalfy_doc_class.
+
+CLASS lcl_counter DEFINITION.
+
+  PUBLIC SECTION.
+    CLASS-DATA emp_ID TYPE i.
+    METHODS m_counter EXPORTING next_number TYPE i.
+    METHODS set_value IMPORTING set_num TYPE i.
+    METHODS get_value EXPORTING get_num TYPE i.
+    METHODS constructor IMPORTING  im_COUNT  TYPE i.
+    CLASS-METHODS set_emp_id IMPORTING im_empid TYPE i.
+  PRIVATE SECTION.
+    DATA count TYPE i.
+
+ENDCLASS.
+
+CLASS lcl_counter IMPLEMENTATION.
+
+  METHOD m_counter.
+    next_number += 1.
+  ENDMETHOD.
+  METHOD set_value.
+    IF set_num GE '100'.
+      count = set_num.
+    ENDIF.
+  ENDMETHOD.
+  METHOD get_value.
+    get_num = count.
+    EMP_ID = 10.
+  ENDMETHOD.
+  METHOD constructor.
+    count = im_count.
+  ENDMETHOD.
+  METHOD SET_EMP_iD.
+    emp_ID = im_empid.
+  ENDMETHOD.
+
+
+
+ENDCLASS.
+
+
+START-OF-SELECTION.
+DATA VAL TYPE I.
+  DATA v_doc TYPE i.
+  DATA v_tag TYPE i.
+  DATA obj_doc TYPE REF TO lcl_counter.
+  DATA obj_tag TYPE REF TO lcl_counter.
+  CREATE OBJECT obj_doc
+    EXPORTING
+      im_count = 200
+    ..
+  CREATE OBJECT obj_tag
+    EXPORTING
+      im_count =  300
+    ..
+
+  obj_doc->set_value( set_num = 100 ).
+  obj_doc->m_counter(
+    IMPORTING
+      next_number =  v_doc
+  ).
+
+  obj_doc->get_value(
+    IMPORTING
+      get_num = VAL
+
+  ).
+*  WRITE VAL.
+
+  obj_doc->m_counter(
+    IMPORTING
+      next_number =  v_doc
+  ).
+  WRITE / V_DOC.
+
+  obj_tag->m_counter(
+    IMPORTING
+      next_number = v_tag
+  ).
+  obj_tag->m_counter(
+    IMPORTING
+      next_number = v_tag
+  ).
+
+*  WRITE : / v_doc , v_tag.

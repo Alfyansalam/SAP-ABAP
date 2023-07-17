@@ -1,0 +1,173 @@
+*&---------------------------------------------------------------------*
+*& Report ZALFY_BILLING_FORM
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zalfy_billing_form.
+*TYPES : BEGIN OF ty_kna1,
+*          kunnr TYPE kna1-kunnr,
+*          name1 TYPE kna1-name1,
+*        END OF ty_kna1.
+*
+*TYPES : BEGIN OF ty_t006a,
+*          msehi TYPE t006a-msehi,
+*          mseht TYPE t006a-mseht,
+*        END OF ty_t006a.
+*TYPES : BEGIN OF ty_vbrk,
+*          vbeln TYPE vbrk-vbeln,
+*          fkdat TYPE vbrk-fkdat,
+*          kunrg TYPE vbrk-kunrg,
+*          netwr TYPE vbrk-netwr,
+*        END OF ty_vbrk.
+*
+*
+*TYPES : BEGIN OF ty_vbrp,
+*          vbeln TYPE zitem-vbeln,
+*          posnr TYPE vbrp-posnr,
+*          matnr TYPE vbrp-matnr,
+*          fkimg TYPE vbrp-fklmg,
+*          vrkme TYPE vbrp-vrkme,
+*          netwr TYPE vbrp-netwr,
+*        END OF ty_vbrp.
+*" Data Objects
+*DATA : it_vbrk TYPE TABLE OF zbilling,
+*       wa_vbrk LIKE LINE OF it_vbrk.
+*DATA : it_vbrp TYPE TABLE OF zitem,
+*       wa_vbrp LIKE LINE OF it_vbrp.
+*
+*DATA it_kna1 TYPE STANDARD TABLE OF ty_kna1.
+*DATA it_t006a TYPE STANDARD TABLE OF ty_t006a.
+*DATA : wa_kna1  LIKE LINE OF it_kna1,
+*       wa_t006a LIKE LINE OF it_t006a,
+*       p_vbeln  TYPE vbrk-vbeln.
+*
+*TYPES ty_it_kna1 TYPE STANDARD TABLE OF ty_kna1.
+*TYPES ty_it_t006a TYPE STANDARD TABLE OF ty_t006a.
+*TYPES ty_it_vbrk TYPE STANDARD TABLE OF ty_vbrk.
+*TYPES ty_it_vbrp TYPE STANDARD TABLE OF ty_vbrp.
+*
+*
+**data: gv_billing type vbrk-vbeln.
+*
+*types: tr_vbeln like RANGE OF vbrk-vbeln.
+*
+*
+*FORM get_details USING s_vbeln TYPE tr_vbeln CHANGING p_it_vbrk TYPE ty_it_vbrk
+*                                         p_it_vbrp TYPE ty_it_vbrp
+*                                         p_it_kna1 TYPE ty_it_kna1
+*                                        p_it_t006a TYPE ty_it_t006a.
+**select-options s_vbeln for wa_vbrk-vbeln.
+*  SELECT vbeln fkdat kunrg netwr FROM zbilling INTO TABLE p_it_vbrk WHERE vbeln in s_vbeln.
+*  SELECT vbeln posnr matnr fklmg vrkme netwr FROM zitem INTO TABLE p_it_vbrp WHERE vbeln in s_vbeln.
+*
+*  SELECT kunnr name1 FROM kna1 INTO TABLE p_it_kna1 FOR ALL ENTRIES IN it_vbrk WHERE kunnr EQ it_vbrk-kunrg.
+*  SELECT msehi mseht FROM t006a INTO TABLE p_it_t006a FOR ALL ENTRIES IN it_vbrp WHERE msehi EQ it_vbrp-vrkme and.
+*ENDFORM.
+
+TYPES tr_vbeln TYPE RANGE OF vbrk-vbeln.
+
+FORM get_header USING r_vbeln TYPE tr_vbeln CHANGING p_it_header TYPE zdemo_t_header.
+  TYPES : BEGIN OF ty_kna1,
+            kunnr TYPE kna1-kunnr,
+            name1 TYPE kna1-name1,
+          END OF ty_kna1.
+  DATA : lt_vbrk TYPE TABLE OF Zbilling,
+         lw_vbrk LIKE LINE OF lt_vbrk.
+
+  DATA : lt_kna1 TYPE STANDARD TABLE OF ty_kna1,
+         lw_kna1 LIKE LINE OF lt_kna1.
+
+  DATA lw_header LIKE LINE OF p_it_header.
+
+  SELECT * FROM Zbilling INTO TABLE lt_vbrk WHERE vbeln IN r_vbeln.
+  IF sy-subrc IS INITIAL.
+    SELECT kunnr name1 FROM kna1 INTO TABLE lt_kna1 FOR ALL ENTRIES IN lt_vbrk WHERE kunnr EQ lt_vbrk-kunrg.
+  ENDIF.
+
+  LOOP AT lt_vbrk INTO lw_vbrk.
+    READ TABLE lt_kna1 INTO lw_kna1 WITH KEY kunnr = lw_vbrk-kunrg.
+    MOVE-CORRESPONDING lw_vbrk TO lw_header.
+    MOVE-CORRESPONDING lw_kna1 TO lw_header.
+    APPEND lw_header TO p_it_header.
+    CLEAR lw_header.
+  ENDLOOP.
+ENDFORM.
+
+FORM get_item USING r_vbeln TYPE tr_vbeln CHANGING p_it_item TYPE ZDEMO_T_item.
+  TYPES : BEGIN OF ty_t006a,
+            msehi TYPE t006a-msehi,
+            mseht TYPE t006a-mseht,
+          END OF ty_t006a.
+  DATA : lt_vbrp TYPE TABLE OF Zitem,
+         lw_vbrp LIKE LINE OF lt_vbrp.
+  DATA : lt_t006a TYPE STANDARD TABLE OF ty_t006a,
+         lw_t006a LIKE LINE OF lt_t006a.
+
+  DATA lw_item LIKE LINE OF p_it_item.
+
+  SELECT * FROM zitem INTO TABLE lt_vbrp WHERE vbeln IN r_vbeln.
+  IF sy-subrc IS INITIAL.
+    SELECT msehi mseht FROM t006a INTO TABLE lt_t006a FOR ALL ENTRIES IN lt_vbrp WHERE msehi EQ lt_vbrp-vrkme.
+  ENDIF.
+  LOOP AT lt_vbrp INTO lw_vbrp.
+    READ TABLE lt_t006a INTO lw_t006a WITH KEY msehi = lw_vbrp-vrkme.
+    MOVE-CORRESPONDING lw_vbrp TO lw_item.
+    MOVE-CORRESPONDING lw_t006a TO lw_item.
+    APPEND lw_item TO p_it_item.
+    CLEAR lw_item.
+  ENDLOOP.
+
+
+ENDFORM.
+
+
+FORM get_billing_data USING r_vbeln TYPE tr_vbeln CHANGING p_it_header TYPE zdemo_t_header p_it_item TYPE zdemo_t_item.
+  TYPES : BEGIN OF ty_kna1,
+            kunnr TYPE kna1-kunnr,
+            name1 TYPE kna1-name1,
+          END OF ty_kna1.
+  DATA : lt_vbrk TYPE TABLE OF Zbilling,
+         lw_vbrk LIKE LINE OF lt_vbrk.
+
+  DATA : lt_kna1 TYPE STANDARD TABLE OF ty_kna1,
+         lw_kna1 LIKE LINE OF lt_kna1.
+
+  DATA lw_header LIKE LINE OF p_it_header.
+
+  SELECT * FROM Zbilling INTO TABLE lt_vbrk WHERE vbeln IN r_vbeln.
+  IF sy-subrc IS INITIAL.
+    SELECT kunnr name1 FROM kna1 INTO TABLE lt_kna1 FOR ALL ENTRIES IN lt_vbrk WHERE kunnr EQ lt_vbrk-kunrg.
+  ENDIF.
+
+  LOOP AT lt_vbrk INTO lw_vbrk.
+    READ TABLE lt_kna1 INTO lw_kna1 WITH KEY kunnr = lw_vbrk-kunrg.
+    MOVE-CORRESPONDING lw_vbrk TO lw_header.
+    MOVE-CORRESPONDING lw_kna1 TO lw_header.
+    APPEND lw_header TO p_it_header.
+    CLEAR lw_header.
+  ENDLOOP.
+
+  TYPES : BEGIN OF ty_t006a,
+            msehi TYPE t006a-msehi,
+            mseht TYPE t006a-mseht,
+          END OF ty_t006a.
+  DATA : lt_vbrp TYPE TABLE OF Zitem,
+         lw_vbrp LIKE LINE OF lt_vbrp.
+  DATA : lt_t006a TYPE STANDARD TABLE OF ty_t006a,
+         lw_t006a LIKE LINE OF lt_t006a.
+
+  DATA lw_item LIKE LINE OF p_it_item.
+
+  SELECT * FROM zitem INTO TABLE lt_vbrp WHERE vbeln IN r_vbeln.
+  IF sy-subrc IS INITIAL.
+    SELECT msehi mseht FROM t006a INTO TABLE lt_t006a FOR ALL ENTRIES IN lt_vbrp WHERE msehi EQ lt_vbrp-vrkme.
+  ENDIF.
+  LOOP AT lt_vbrp INTO lw_vbrp.
+    READ TABLE lt_t006a INTO lw_t006a WITH KEY msehi = lw_vbrp-vrkme.
+    MOVE-CORRESPONDING lw_vbrp TO lw_item.
+    MOVE-CORRESPONDING lw_t006a TO lw_item.
+    APPEND lw_item TO p_it_item.
+    CLEAR lw_item.
+  ENDLOOP.
+
+ENDFORM.

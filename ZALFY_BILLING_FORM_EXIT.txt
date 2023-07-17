@@ -1,0 +1,59 @@
+*&---------------------------------------------------------------------*
+*& Report ZALFY_BILLING_FORM_EXIT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zalfy_billing_form_exit.
+DATA : it_header TYPE zdemo_t_header,
+       it_item   TYPE zdemo_t_item.
+
+
+
+DATA v_vbeln TYPE vbrk-vbeln.
+SELECT-OPTIONS s_vbeln FOR v_vbeln.
+
+
+
+START-OF-SELECTION.
+  PERFORM get_data.
+
+
+
+END-OF-SELECTION.
+  PERFORM display.
+
+
+FORM get_data .
+*PERFORM get_header IN PROGRAM ZDEMO_BILLING_SUB USING s_vbeln[] CHANGING it_header.
+*PERFORM get_item IN PROGRAM ZDEMO_BILLING_SUB USING s_vbeln[] CHANGING it_item.
+  PERFORM get_billing_data IN PROGRAM Zalfy_BILLING_form USING s_vbeln[] CHANGING it_header it_item.
+ENDFORM.
+
+FORM display .
+  DATA : lw_header LIKE LINE OF it_header,
+         lw_item   LIKE LINE OF it_item.
+  SORT it_item BY vbeln posnr.
+  LOOP AT it_item INTO lw_item.
+    AT NEW vbeln.
+      READ TABLE it_header INTO lw_header WITH KEY vbeln = lw_item-vbeln.
+      WRITE : / 'Doc No:', lw_header-vbeln,
+            / 'Payer:', lw_header-name1,
+            / 'Date:', lw_header-fkdat,
+            / 'Net Value:', lw_header-netwr.
+      SKIP.
+      WRITE : / 'Item',
+               20'Material',
+               30'Quantity',
+               40'UoM',
+               50'Net Value'.
+    ENDAT.
+    WRITE : / lw_item-posnr,
+             20 lw_item-matnr LEFT-JUSTIFIED,
+             30 lw_item-fklmg LEFT-JUSTIFIED,
+             40 lw_item-mseht LEFT-JUSTIFIED,
+             50 lw_item-netwr LEFT-JUSTIFIED.
+
+
+
+ENDLOOP.
+ENDFORM.

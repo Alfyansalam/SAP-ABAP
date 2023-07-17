@@ -1,0 +1,47 @@
+*&---------------------------------------------------------------------*
+*& Report ZALFY_INTERNAL_TABLE
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zalfy_internal_table.
+
+TYPES : BEGIN OF ty_makt,
+          matnr TYPE matnr,
+          spras TYPE spras,
+          maktx TYPE maktx,
+        END OF ty_makt.
+DATA : it_makt TYPE TABLE OF ty_makt,
+       wa_makt LIKE LINE OF it_makt.
+
+wa_makt-matnr = '100'.
+wa_makt-spras = 'E'.
+wa_makt-maktx = 'Pencil'.
+
+APPEND wa_makt TO it_makt.
+
+wa_makt-matnr = '200'.
+wa_makt-spras = 'E'.
+wa_makt-maktx = 'Pencil box'.
+
+APPEND wa_makt TO it_makt.
+
+wa_makt-matnr = '200'.
+wa_makt-spras = 'E'.
+wa_makt-maktx = 'Laptop'.
+
+APPEND wa_makt TO it_makt.
+
+wa_makt-matnr = '300'.
+wa_makt-spras = 'E'.
+wa_makt-maktx = 'Mouse'.
+
+APPEND wa_makt TO it_makt.
+
+READ TABLE it_makt INTO wa_makt INDEX 3.
+write : / wa_makt.
+READ TABLE it_makt INTO wa_makt WITH KEY matnr = '200' spras = 'E'.
+write : / wa_makt.
+
+LOOP AT it_makt INTO wa_makt WHERE matnr EQ '200'.
+  write : / wa_makt.
+ENDLOOP.

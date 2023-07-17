@@ -1,0 +1,44 @@
+*&---------------------------------------------------------------------*
+*& Report ZALFY_BILLING_FMCALL
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zalfy_billing_fmcall.
+DATA : it_header TYPE zdemo_t_header,
+       it_item   TYPE zdemo_t_item.
+
+DATA : lw_header LIKE LINE OF it_header,
+       lw_item   LIKE LINE OF it_item.
+
+DATA v_vbeln TYPE vbeln.
+SELECT-OPTIONS s_vbeln FOR v_VBELN.
+
+
+START-OF-SELECTION.
+  PERFORM get_Data.
+
+END-OF-SELECTION.
+
+  PERFORM show_Output.
+
+FORM get_Data .
+
+  CALL FUNCTION 'ZALFY_FM'
+    EXPORTING
+      im_vbeln   = s_vbeln[]
+    IMPORTING
+      itm_header = it_header
+      itm_item   = it_item.
+ENDFORM.
+
+
+
+
+
+FORM show_Output .
+CALL FUNCTION 'ZALFY_FM_OP'
+  EXPORTING
+    itm_header       = IT_HEADER
+    itm_item         = IT_ITEM
+          .
+ENDFORM.

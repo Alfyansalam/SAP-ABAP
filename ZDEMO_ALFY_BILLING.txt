@@ -1,0 +1,97 @@
+*&---------------------------------------------------------------------*
+*& Report ZDEMO_ALFY_BILLING
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zdemo_alfy_billing.
+
+PARAMETERS p_vbeln TYPE zbilling-vbeln.
+
+TYPES : BEGIN OF ty_zbilling,
+          vbeln TYPE zbilling-vbeln,
+          fkdat TYPE zbilling-fkdat,
+          kunrg TYPE zbilling-kunrg,
+          netwr TYPE zbilling-netwr,
+        END OF ty_zbilling.
+
+
+TYPES : BEGIN OF ty_zitem,
+*          vbeln TYPE zitem-vbeln,
+          posnr TYPE zitem-posnr,
+          matnr TYPE zitem-matnr,
+          fklmg TYPE zitem-fklmg,
+          vrkme TYPE zitem-vrkme,
+          netwr TYPE zitem-netwr,
+        END OF ty_zitem.
+
+TYPES : BEGIN OF ty_t006a,
+          msehi TYPE t006a-msehi,
+          mseht TYPE t006a-mseht,
+        END OF ty_t006a.
+
+
+*DATA st_zbilling TYPE ty_zbilling.
+*DATA st_zitem TYPE ty_zitem.
+*DATA v_name1 TYPE kna1-name1.
+*DATA v_mseht TYPE t006a-mseht.
+*SELECT SINGLE vbeln fkdat kunrg netwr FROM zbilling INTO st_zbilling WHERE vbeln EQ p_vbeln.
+*SELECT SINGLE name1 FROM kna1 INTO v_name1 WHERE kunnr EQ st_zbilling-kunrg.
+*WRITE : / 'Doc No :', st_zbilling-vbeln,
+*        / 'Date :', st_zbilling-fkdat,
+*        / 'Payer :', v_name1,
+*        / 'NetValue :',st_zbilling-netwr.
+*
+*WRITE : / 'item',
+*20 'Material',
+*40 'Qty',
+*60 'UoM',
+*80 'Netvalue'.
+*
+*SELECT vbeln posnr matnr fklmg vrkme netwr FROM zitem INTO st_zitem WHERE vbeln EQ p_vbeln.
+*  SELECT SINGLE mseht FROM t006a INTO v_mseht WHERE spras eq sy-langu and msehi eq st_zitem-vrkme.
+*  write : / st_zitem-posnr ,
+*20 st_zitem-matnr,
+*30 st_zitem-fklmg,
+*60 v_mseht,
+*68 st_zitem-netwr.
+*ENDSELECT.
+
+DATA : it_zbilling TYPE TABLE OF ty_zbilling,
+       wa_zbilling LIKE LINE OF it_zbilling,
+       it_zitem    TYPE TABLE OF zitem,
+       wa_zitem    LIKE LINE OF it_zitem,
+       v_mseht     TYPE t006a-mseht,
+       v_name1     TYPE kna1-name1,
+       it_t006a    TYPE TABLE OF ty_t006a,
+       wa_t006a    LIKE LINE OF it_t006a.
+
+SELECT vbeln fkdat kunrg netwr FROM zbilling INTO wa_zbilling.
+  APPEND wa_zbilling TO it_zbilling.
+
+ENDSELECT.
+
+
+READ TABLE it_zbilling INTO wa_zbilling WITH KEY vbeln = p_vbeln.
+SELECT SINGLE name1 FROM kna1 INTO v_name1 WHERE kunnr EQ wa_zbilling-kunrg.
+WRITE : / 'Doc No :', wa_zbilling-vbeln,
+        / 'Date :', wa_zbilling-fkdat,
+        / 'Payer :', v_name1,
+        / 'NetValue :',wa_zbilling-netwr.
+
+WRITE : / 'item',
+20 'Material',
+40 'Qty',
+60 'UoM',
+80 'Netvalue'.
+
+SELECT   * FROM zitem  INTO TABLE it_zitem WHERE vbeln EQ p_vbeln.
+
+SELECT msehi mseht FROM t006a INTO TABLE it_t006a FOR ALL ENTRIES IN it_zitem WHERE spras EQ sy-langu AND msehi EQ it_zitem-vrkme.
+LOOP AT it_zitem INTO wa_zitem.
+READ TABLE it_t006a INTO wa_t006a WITH KEY msehi = wa_zitem-vrkme.
+  WRITE : / wa_zitem-posnr ,
+20 wa_zitem-matnr,
+30 wa_zitem-fklmg,
+60 wa_t006a-mseht,
+68 wa_zitem-netwr.
+ENDLOOP.

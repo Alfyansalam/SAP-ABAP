@@ -1,0 +1,144 @@
+*&---------------------------------------------------------------------*
+*& Report ZDEMO_ALFY_PLANT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zdemo_alfy_plant.
+
+TYPES : BEGIN OF ty_mard,
+          matnr TYPE mard-matnr,
+          werks TYPE mard-werks,
+          lgort TYPE mard-lgort,
+        END OF ty_mard.
+TYPES : BEGIN OF ty_makt,
+          matnr TYPE makt-matnr,
+          maktx TYPE makt-maktx,
+        END OF ty_makt.
+
+TYPES : BEGIN OF ty_t001w,
+          werks TYPE t001w-name1,
+          name1 TYPE t001w-name1,
+
+        END OF ty_t001w.
+
+TYPES : BEGIN OF ty_zdanger,
+          matnr TYPE zdanger-matnr,
+        END OF ty_zdanger.
+
+TYPES : BEGIN OF ty_range,
+          sign TYPE char1,
+          opti TYPE char2,
+          low  TYPE matnr,
+          high TYPE matnr,
+        END OF ty_range.
+
+
+
+*DATA : p_werks TYPE mard-werks,
+*       p_matnr TYPE zdanger-matnr.
+*SELECT-OPTIONS s_werks FOR p_werks.
+*SELECT-OPTIONS s_matnr FOR p_matnr.
+
+DATA : it_mard    TYPE STANDARD TABLE OF ty_mard,
+       wa_mard    LIKE LINE OF it_mard,
+       it_makt    TYPE TABLE OF ty_makt,
+       wa_makt    LIKE LINE OF it_makt,
+       it_t001w   TYPE TABLE OF ty_t001w,
+       wa_t001w   LIKE LINE OF it_t001w,
+       it_zdanger TYPE TABLE OF ty_zdanger,
+       wa_zdanger LIKE LINE OF it_zdanger.
+
+DATA : it_zalfy_material TYPE STANDARD TABLE OF zalfy_material,
+       wa_zalfy_material LIKE LINE OF it_zalfy_material.
+DATA it_range_s TYPE STANDARD TABLE OF ty_range.
+DATA it_range_d TYPE STANDARD TABLE OF ty_range.
+DATA wa_range TYPE ty_range.
+
+DATA it_range TYPE STANDARD TABLE OF ty_range.
+SELECT-OPTIONS s_werks FOR wa_mard-werks.
+
+SELECT matnr werks lgort FROM mard INTO TABLE it_mard WHERE werks IN s_werks[].
+IF it_mard IS NOT INITIAL.
+  SELECT matnr maktx FROM makt INTO TABLE it_makt FOR ALL ENTRIES IN it_mard WHERE matnr EQ it_mard-matnr AND spras EQ sy-langu.
+  SELECT werks name1 FROM t001w INTO TABLE it_t001w FOR ALL ENTRIES IN it_mard WHERE werks EQ it_mard-werks AND spras EQ sy-langu.
+*  SELECT matnr FROM zdanger INTO TABLE it_zdanger.
+ENDIF.
+*SELECT matnr FROM mard INTO TABLE it_zdanger WHERE matnr IN s_matnr[].
+
+SELECT * FROM zalfy_material INTO TABLE it_zalfy_material.
+
+WRITE : /'Material number',
+   40 'short description',
+   70 'plant',
+   90 'plant_name',
+   120 'storage'.
+SORT it_mard BY matnr.
+*LOOP AT it_mard INTO wa_mard.
+*  READ TABLE it_makt INTO wa_makt WITH KEY matnr = wa_mard-matnr.
+*  READ TABLE it_t001w INTO wa_t001w WITH KEY werks = wa_mard-werks.
+*  READ TABLE it_zdanger INTO wa_zdanger WITH KEY matnr = wa_makt-matnr.
+*
+*  IF  wa_mard-matnr IN it_range.
+*    FORMAT COLOR COL_NEGATIVE.
+*    WRITE : / wa_mard-matnr,
+*            40 wa_makt-maktx LEFT-JUSTIFIED,
+*            70 wa_mard-werks,
+*            90 wa_t001w-name1,
+*            120 wa_mard-lgort.
+*    FORMAT COLOR OFF.
+*  ELSE.
+*    WRITE : / wa_mard-matnr,
+*        40 wa_makt-maktx LEFT-JUSTIFIED,
+*        70 wa_mard-werks,
+*        90 wa_t001w-name1,
+*        120 wa_mard-lgort.
+*  ENDIF.
+*
+*ENDLOOP.
+
+
+LOOP AT it_zalfy_material INTO wa_zalfy_material.
+  IF wa_zalfy_material-name EQ 'D'.
+    MOVE-CORRESPONDING wa_zalfy_material TO wa_range.
+    APPEND wa_range TO it_range_d.
+  ELSEIF wa_zalfy_material-name EQ 'S'.
+    MOVE-CORRESPONDING wa_zalfy_material TO wa_range.
+    APPEND wa_range TO it_range_s.
+  ENDIF.
+  CLEAR wa_range.
+ENDLOOP.
+
+LOOP AT it_mard INTO wa_mard.
+  READ TABLE it_makt INTO wa_makt WITH KEY matnr = wa_mard-matnr.
+  READ TABLE it_t001w INTO wa_t001w WITH KEY werks = wa_mard-werks.
+*  READ TABLE it_zdanger INTO wa_zdanger WITH KEY matnr = wa_makt-matnr.
+
+  IF  wa_mard-matnr IN it_range_d.
+    FORMAT COLOR COL_NEGATIVE.
+    WRITE : / wa_mard-matnr,
+            40 wa_makt-maktx LEFT-JUSTIFIED,
+            70 wa_mard-werks,
+            90 wa_t001w-name1,
+            120 wa_mard-lgort.
+
+  ELSEIF wa_mard-matnr IN it_range_s.
+    FORMAT COLOR COL_POSITIVE.
+    WRITE : / wa_mard-matnr,
+        40 wa_makt-maktx LEFT-JUSTIFIED,
+        70 wa_mard-werks,
+        90 wa_t001w-name1,
+        120 wa_mard-lgort.
+
+  ELSE.
+
+    WRITE : / wa_mard-matnr,
+        40 wa_makt-maktx LEFT-JUSTIFIED,
+        70 wa_mard-werks,
+        90 wa_t001w-name1,
+        120 wa_mard-lgort.
+
+
+  ENDIF.
+  FORMAT COLOR OFF.
+
+ENDLOOP.

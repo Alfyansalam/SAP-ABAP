@@ -1,0 +1,174 @@
+*&---------------------------------------------------------------------*
+*& Report ZALFY_BILLING_PERFORM
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zalfy_billing_perform.
+
+*TYPES : BEGIN OF ty_vbrk,
+*          vbeln TYPE vbrk-vbeln,
+*          fkdat TYPE vbrk-fkdat,
+*          kunrg TYPE vbrk-kunrg,
+*          netwr TYPE vbrk-netwr,
+*        END OF ty_vbrk.
+*
+*
+*TYPES : BEGIN OF ty_vbrp,
+*          vbeln TYPE zitem-vbeln,
+*          posnr TYPE vbrp-posnr,
+*          matnr TYPE vbrp-matnr,
+*          fkimg TYPE vbrp-fklmg,
+*          vrkme TYPE vbrp-vrkme,
+*          netwr TYPE vbrp-netwr,
+*        END OF ty_vbrp.
+*TYPES : BEGIN OF ty_kna1,
+*          kunnr TYPE kna1-kunnr,
+*          name1 TYPE kna1-name1,
+*        END OF ty_kna1.
+*
+*TYPES : BEGIN OF ty_t006a,
+*          msehi TYPE t006a-msehi,
+*          mseht TYPE t006a-mseht,
+*        END OF ty_t006a.
+*" Data Objects
+*DATA : it_vbrk TYPE TABLE OF ty_vbrk,
+*       wa_vbrk LIKE LINE OF it_vbrk.
+*DATA : it_vbrp TYPE TABLE OF ty_vbrp,
+*       wa_vbrp LIKE LINE OF it_vbrp.
+*
+*DATA it_kna1 TYPE STANDARD TABLE OF ty_kna1.
+*DATA it_t006a TYPE STANDARD TABLE OF ty_t006a.
+*DATA : wa_kna1  LIKE LINE OF it_kna1,
+*       wa_t006a LIKE LINE OF it_t006a,
+*       p_vbeln  TYPE vbrp-vbeln.
+*SELECT-OPTIONS s_vbeln FOR p_vbeln.
+**SELECT-OPTIONS s_vbeln FOR wa_vbrk-vbeln.
+**SET PF-STATUS 'LIST'.
+*PERFORM get_details IN PROGRAM zalfy_billing_form USING s_vbeln[] CHANGING it_vbrk it_vbrp it_kna1 it_t006a.
+*SORT it_vbrp BY vbeln.
+*LOOP AT it_vbrp INTO wa_vbrp.
+*  AT NEW vbeln.
+*    READ TABLE it_vbrk INTO wa_vbrk WITH KEY vbeln = wa_vbrp-vbeln.
+*    READ TABLE it_kna1 INTO wa_kna1 WITH KEY kunnr = wa_vbrk-kunrg.
+*    WRITE : / 'Doc No:', wa_vbrk-vbeln,
+*           / 'Payer:', wa_kna1-name1,
+*           / 'Date:', wa_vbrk-fkdat,
+*           / 'Net Value:', wa_vbrk-netwr.
+*    SKIP.
+*    WRITE : / 'Item',
+*             'Material',
+*             'Quantity',
+*             'UoM',
+*             'Net Value'.
+*  ENDAT.
+*  READ TABLE it_t006a INTO wa_t006a WITH KEY msehi = wa_vbrp-vrkme.
+*  WRITE : / wa_vbrp-posnr,
+*            wa_vbrp-matnr,
+*            wa_vbrp-fkimg,
+*            wa_t006a-mseht,
+*            wa_vbrp-netwr.
+*  AT END OF vbeln.
+*    SUM.
+*    WRITE : / wa_vbrp-fkimg, wa_vbrp-netwr.
+**    WRITE : / '***************************************END of Document****************************************************'.
+*    SKIP.
+*  ENDAT.
+*ENDLOOP.
+
+
+
+
+TYPES : BEGIN OF ty_kna1,
+          kunnr TYPE kna1-kunnr,
+          name1 TYPE kna1-name1,
+        END OF ty_kna1.
+
+TYPES : BEGIN OF ty_t006a,
+          msehi TYPE t006a-msehi,
+          mseht TYPE t006a-mseht,
+        END OF ty_t006a.
+" Data Objects
+DATA : it_vbrk TYPE TABLE OF Zbilling,
+       wa_vbrk LIKE LINE OF it_vbrk.
+DATA : it_vbrp TYPE TABLE OF zitem,
+       wa_vbrp LIKE LINE OF it_vbrp.
+DATA : it_header TYPE zdemo_t_header,
+       it_item   TYPE zdemo_t_item,
+       wa_header LIKE LINE OF it_header,
+       wa_item   LIKE LINE OF it_item.
+DATA it_kna1 TYPE STANDARD TABLE OF ty_kna1.
+DATA it_t006a TYPE STANDARD TABLE OF ty_t006a.
+DATA : wa_kna1  LIKE LINE OF it_kna1,
+       wa_t006a LIKE LINE OF it_t006a.
+
+" Provide selection screen for user Input
+
+START-OF-SELECTION.
+  SELECT-OPTIONS s_vbeln FOR wa_vbrk-vbeln.
+  " Data Selection
+  PERFORM get_header IN PROGRAM zalfy_billing_form USING s_vbeln[]
+                                                  CHANGING it_header.
+
+  PERFORM get_item IN PROGRAM zalfy_billing_form USING s_vbeln[]
+                                                  CHANGING it_item.
+
+
+  WRITE : / 'Doc No:',15 'Payer:',45 'Date:',65 'Net Value:'.
+
+
+*  SORT it_item BY vbeln.
+   loop AT it_header INTO wa_header.
+
+
+  SKIP.
+*    READ TABLE it_header INTO wa_header WITH KEY vbeln = wa_item-vbeln.
+  WRITE : / wa_header-vbeln,
+            wa_header-name1,
+            wa_header-fkdat,
+            wa_header-netwr.
+  HIDE wa_header-vbeln.
+  SKIP.
+  CLEAR wa_header.
+ENDLOOP.
+CLEAR wa_header.
+
+AT LINE-SELECTION.
+  WRITE : / 'Item',
+           10 'Material',
+           40 'Quantity',
+           50'UoM',
+           70 'Net Value'.
+
+  LOOP AT it_item INTO wa_item WHERE vbeln EQ wa_header-vbeln.
+
+    WRITE : / wa_item-posnr,
+            10  wa_item-matnr LEFT-JUSTIFIED,
+            40  wa_item-fklmg LEFT-JUSTIFIED,
+             50 wa_item-mseht LEFT-JUSTIFIED,
+             70 wa_item-netwr LEFT-JUSTIFIED.
+  ENDLOOP.
+*    AT END OF vbeln.
+*      SUM.
+*      WRITE : / wa_vbrp-fkimg, wa_vbrp-netwr.
+**    WRITE : / '***************************************END of Document****************************************************'.
+*      SKIP.
+*    ENDAT.
+
+*TOP-OF-PAGE.
+*WRITE 'UST Global'.
+*
+*END-OF-PAGE.
+*WRITE : / 'This is electronic statement'.
+*
+*AT LINE-SELECTION.
+*  WRITE : / 'This is secondary list', sy-lsind.
+  SET PF-STATUS 'LIST'.
+
+AT USER-COMMAND.
+  CASE sy-ucomm.
+    WHEN 'PDF'.
+
+    WHEN 'EXCEL'.
+
+    WHEN OTHERS.
+  ENDCASE.
