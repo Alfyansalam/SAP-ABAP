@@ -3,29 +3,303 @@
 *&---------------------------------------------------------------------*
 *&
 *&---------------------------------------------------------------------*
-REPORT ZALFY_ALV_REPORT.
-*class lcl_report definition.
+REPORT zalfy_alv_report.
+CLASS lcl_report DEFINITION.
+
+  PUBLIC SECTION.
+
+    TYPES: BEGIN OF ty_vbak,
+             vbeln   TYPE vbak-vbeln,
+             erdat   TYPE erdat,
+             auart   TYPE auart,
+             t_color TYPE lvc_t_scol,
+             kunnr   TYPE kunnr,
+           END   OF ty_vbak.
+
+    DATA: t_vbak TYPE STANDARD TABLE OF ty_vbak.
+
+    DATA: o_alv TYPE REF TO cl_salv_table.
+
+    METHODS:
+      get_data,
+      generate_output.
+    METHODS:
+      on_link_click
+        FOR EVENT link_click OF cl_salv_events_table
+        IMPORTING
+          row
+          column  .
+
+
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA: lo_report TYPE REF TO lcl_report.
+
+  CREATE OBJECT lo_report.
+
+  lo_report->get_data( ).
+
+  lo_report->generate_output( ).
+
+CLASS lcl_report IMPLEMENTATION.
+
+  METHOD get_data.
+    SELECT vbeln erdat auart kunnr
+               INTO  CORRESPONDING FIELDS OF TABLE t_vbak
+               FROM  vbak
+               UP TO 20 ROWS.
+
+  ENDMETHOD.
+
+
+  METHOD generate_output.
+
+    DATA: lx_msg TYPE REF TO cx_salv_msg.
+    TRY.
+        cl_salv_table=>factory(
+          IMPORTING
+            r_salv_table = o_alv
+          CHANGING
+            t_table      = t_vbak ).
+      CATCH cx_salv_msg INTO lx_msg.
+    ENDTRY.
+    DATA: lo_functions TYPE REF TO cl_salv_functions_list.
+
+    lo_functions = o_alv->get_functions( ).
+    lo_functions->set_default( abap_true ).
+
+
+    o_alv->set_screen_status(
+      pfstatus      =  'SALV_STANDARD'
+      report        =  'SALV_DEMO_TABLE_SELECTIONS'
+      set_functions = o_alv->c_functions_all ).
+
+
+
+    DATA: lo_layout  TYPE REF TO cl_salv_layout,
+          lf_variant TYPE slis_vari,
+          ls_key     TYPE salv_s_layout_key.
+
+    lo_layout = o_alv->get_layout( ).
+    ls_key-report = sy-repid.
+    lo_layout->set_key( ls_key ).
+    lo_layout->set_save_restriction( if_salv_c_layout=>restrict_none ).
+    lf_variant = 'DEFAULT'.
+    lo_layout->set_initial_layout( lf_variant ).
+
+
+
+
+    DATA: lo_header  TYPE REF TO cl_salv_form_layout_grid,
+          lo_h_label TYPE REF TO cl_salv_form_label,
+          lo_h_flow  TYPE REF TO cl_salv_form_layout_flow.
+
+
+     create object lo_header.
+
+
+
+     lo_h_label = lo_header->create_label( row = 1 column = 1 ).
+    lo_h_label->set_text( 'Header in Bold' ).
+
+
+     lo_h_flow = lo_header->create_flow( row = 2  column = 1 ).
+    lo_h_flow->create_text( text = 'This is text of flow' ).
+
+    lo_h_flow = lo_header->create_flow( row = 3  column = 1 ).
+    lo_h_flow->create_text( text = 'Number of Records in the output' ).
+
+    lo_h_flow = lo_header->create_flow( row = 3  column = 2 ).
+    lo_h_flow->create_text( text = 20 ).
+
+    o_alv->set_top_of_list( lo_header ).
+
+
+    o_alv->set_top_of_list_print( lo_header ).
+
+
+    DATA: lo_footer  TYPE REF TO cl_salv_form_layout_grid,
+          lo_f_label TYPE REF TO cl_salv_form_label,
+          lo_f_flow  TYPE REF TO cl_salv_form_layout_flow.
+
+
+     create object lo_footer.
+
+
+     lo_f_label = lo_footer->create_label( row = 1 column = 1 ).
+    lo_f_label->set_text( 'Footer .. here it goes' ).
+
+     lo_f_flow = lo_footer->create_flow( row = 2  column = 1 ).
+    lo_f_flow->create_text( text = 'This is text of flow in footer' ).
+
+    lo_f_flow = lo_footer->create_flow( row = 3  column = 1 ).
+    lo_f_flow->create_text( text = 'Footer number' ).
+
+    lo_f_flow = lo_footer->create_flow( row = 3  column = 2 ).
+    lo_f_flow->create_text( text = 1 ).
+
+
+     o_alv->set_end_of_list( lo_footer ).
+
+
+     o_alv->set_end_of_list_print( lo_footer ).
+
+
+
+
+
+    DATA: lo_display TYPE REF TO cl_salv_display_settings.
 *
-*  public SECTION.
+*   get display object
+    lo_display = o_alv->get_display_settings( ).
+*
+*   set ZEBRA pattern
+    lo_display->set_striped_pattern( 'X' ).
+*
+*   Title to ALV
+    lo_display->set_list_header( 'ALV Test for Display Settings' ).
 
-  data t_vbak type STANDARD TABLE OF vbak.
 
-  data o_alv type REF TO cl_salv_table.
 
-*  ENDCLASS.
+    DATA: lo_cols TYPE REF TO cl_salv_columns.
+    lo_cols = o_alv->get_columns( ).
+*
+*   set the Column optimization
+    lo_cols->set_optimize( 'X' ).
+*
+*...Process individual columns
+    DATA: lo_column TYPE REF TO cl_salv_column.
+*
+*   Change the properties of the Columns KUNNR
+    TRY.
+        lo_column = lo_cols->get_column( 'KUNNR' ).
+        lo_column->set_long_text( 'Sold-To Party' ).
+        lo_column->set_medium_text( 'Sold-To Party' ).
+        lo_column->set_short_text( 'Sold-To' ).
+        lo_column->set_output_length( 10 ).
+      CATCH cx_salv_not_found.
+    ENDTRY.
 
-  START-OF-SELECTION.
-*  data lo_report type REF TO lcl_report.
-*  create object lo_report.
 
-  select * from vbak into table t_vbak.
 
-    cl_salv_table=>factory(
 
-      IMPORTING
-        r_salv_table   =  o_alv                         " Basis Class Simple ALV Tables
-      CHANGING
-        t_table        =  t_vbak
-    ).
+    DATA: lo_cols_tab TYPE REF TO cl_salv_columns_table,
+          lo_col_tab  TYPE REF TO cl_salv_column_table.
+*
+*   get Columns object
+    lo_cols_tab = o_alv->get_columns( ).
+*
+*   Get VBELN column
+    TRY.
+        lo_col_tab ?= lo_cols_tab->get_column( 'VBELN' ).
+      CATCH cx_salv_not_found.
+    ENDTRY.
+*
+*   Set the HotSpot for VBELN Column
+    TRY.
+        CALL METHOD lo_col_tab->set_cell_type
+          EXPORTING
+            value = if_salv_c_cell_type=>hotspot.
+        .
+      CATCH cx_salv_data_error .
+    ENDTRY.
+*
+*...Events
+    DATA: lo_events TYPE REF TO cl_salv_events_table.
+*
+*   all events
+    lo_events = o_alv->get_event( ).
+*
+*   event handler
+    SET HANDLER lo_report->on_link_click FOR lo_events.
 
+
+
+
+
+*    DATA: lo_cols_tab TYPE REF TO cl_salv_columns_table,
+*          lo_col_tab  TYPE REF TO cl_salv_column_table.
+    DATA: ls_color TYPE lvc_s_colo.    " Colors strucutre
+*
+*   get Columns object
+    lo_cols_tab = o_alv->get_columns( ).
+*
+    INCLUDE <color>.
+*
+*   Get ERDAT column & set the yellow Color fot it
+    TRY.
+        lo_col_tab ?= lo_cols_tab->get_column( 'ERDAT' ).
+        ls_color-col = col_total.
+        lo_col_tab->set_color( ls_color ).
+      CATCH cx_salv_not_found.
+    ENDTRY.
+*
+*.......Color for Specific Cell & Rows.................
+*   Applying color on the 3rd Row and Column AUART
+*   Applying color on the Entire 5th Row
+*
+    DATA: lt_s_color TYPE lvc_t_scol,
+          ls_s_color TYPE lvc_s_scol,
+          la_vbak    LIKE LINE OF t_vbak,
+          l_count    TYPE i.
+*
+    LOOP AT t_vbak INTO la_vbak.
+      l_count = l_count + 1.
+      CASE l_count.
+*       Apply RED color to the AUART Cell of the 3rd Row
+        WHEN 3.
+          ls_s_color-fname     = 'AUART'.
+          ls_s_color-color-col = col_negative.
+          ls_s_color-color-int = 0.
+          ls_s_color-color-inv = 0.
+          APPEND ls_s_color TO lt_s_color.
+          CLEAR  ls_s_color.
+*
+*       Apply GREEN color to the entire row # 5
+*         For entire row, we don't pass the Fieldname
+        WHEN 5.
+          ls_s_color-color-col = col_positive.
+          ls_s_color-color-int = 0.
+          ls_s_color-color-inv = 0.
+          APPEND ls_s_color TO lt_s_color.
+          CLEAR  ls_s_color.
+      ENDCASE.
+*     Modify that data back to the output table
+      la_vbak-t_color = lt_s_color.
+      MODIFY t_vbak FROM la_vbak.
+      CLEAR  la_vbak.
+      CLEAR  lt_s_color.
+    ENDLOOP.
+*
+*   We will set this COLOR table field name of the internal table to
+*   COLUMNS tab reference for the specific colors
+    TRY.
+        lo_cols_tab->set_color_column( 'T_COLOR' ).
+      CATCH cx_salv_data_error.                         "#EC NO_HANDLER
+    ENDTRY.
       o_alv->display( ).
+  ENDMETHOD.
+
+
+  METHOD on_link_click.
+*
+    DATA: la_vbak TYPE ty_vbak.
+*
+*   Get the Sales Order number from the table
+    READ TABLE lo_report->t_vbak INTO la_vbak INDEX row.
+    IF la_vbak-vbeln IS NOT INITIAL.
+      MESSAGE i398(00) WITH 'You have selected' la_vbak-vbeln.
+    ENDIF.
+
+
+  ENDMETHOD.
+
+
+
+
+
+
+
+
+ENDCLASS.
